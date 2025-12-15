@@ -1,0 +1,179 @@
+index.html
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Malla Interactiva – Ingeniería Civil Industrial</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f0f14;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    .ciclo {
+      margin-bottom: 40px;
+    }
+    .semestres {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .semestre {
+      border: 2px solid #444;
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .semestre h3 {
+      text-align: center;
+      margin-top: 0;
+    }
+    .ramo {
+      border-radius: 8px;
+      padding: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+      user-select: none;
+    }
+    .basica { background: #b03060; }
+    .transversal { background: #5a2a82; }
+    .especializada { background: #1f3a5f; }
+
+    .no-aprobado { opacity: 1; }
+    .aprobado {
+      background: #7b3fa1 !important;
+      text-decoration: line-through;
+      opacity: 0.9;
+    }
+    .bloqueado {
+      background: #555 !important;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+    .stats {
+      margin-top: 40px;
+      padding: 15px;
+      border: 2px solid #444;
+      border-radius: 12px;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Malla Interactiva – Ingeniería Civil Industrial</h1>
+
+<div id="malla"></div>
+
+<div class="stats" id="stats"></div>
+
+<script>
+const ramos = [
+  // Primer año
+  {id:'mat', nombre:'Matemáticas', creditos:12, area:'basica', semestre:1, prereq:[]},
+  {id:'qui', nombre:'Química', creditos:6, area:'basica', semestre:1, prereq:[]},
+  {id:'ti1', nombre:'Taller de Ingeniería I', creditos:6, area:'especializada', semestre:1, prereq:[]},
+  {id:'inf', nombre:'Herramientas Informáticas', creditos:3, area:'transversal', semestre:1, prereq:[]},
+  {id:'ing0', nombre:'Inglés: Taller de Conversación', creditos:3, area:'transversal', semestre:1, prereq:[]},
+
+  {id:'cal1', nombre:'Cálculo I', creditos:6, area:'basica', semestre:2, prereq:['mat']},
+  {id:'alg', nombre:'Álgebra Lineal', creditos:6, area:'basica', semestre:2, prereq:['mat']},
+  {id:'fis1', nombre:'Física I', creditos:6, area:'basica', semestre:2, prereq:['mat']},
+  {id:'ti2', nombre:'Taller de Ingeniería II', creditos:6, area:'especializada', semestre:2, prereq:['ti1']},
+  {id:'prog1', nombre:'Programación I', creditos:6, area:'especializada', semestre:2, prereq:[]},
+
+  // Segundo año
+  {id:'cal2', nombre:'Cálculo II', creditos:6, area:'basica', semestre:3, prereq:['cal1']},
+  {id:'bio', nombre:'Biociencias', creditos:6, area:'basica', semestre:3, prereq:[]},
+  {id:'fis2', nombre:'Física II', creditos:6, area:'basica', semestre:3, prereq:['fis1']},
+  {id:'ti3', nombre:'Taller de Ingeniería III', creditos:3, area:'especializada', semestre:3, prereq:['ti2']},
+  {id:'prog2', nombre:'Programación II', creditos:6, area:'especializada', semestre:3, prereq:['prog1']},
+  {id:'ing1', nombre:'Inglés I', creditos:3, area:'transversal', semestre:3, prereq:[]},
+
+  {id:'cal3', nombre:'Cálculo III', creditos:6, area:'basica', semestre:4, prereq:['cal2']},
+  {id:'disc', nombre:'Matemáticas Discretas', creditos:6, area:'basica', semestre:4, prereq:['alg']},
+  {id:'fis3', nombre:'Física III', creditos:6, area:'basica', semestre:4, prereq:['fis2']},
+  {id:'ti4', nombre:'Taller de Ingeniería IV', creditos:3, area:'especializada', semestre:4, prereq:['ti3']},
+  {id:'met', nombre:'Métodos Experimentales', creditos:6, area:'especializada', semestre:4, prereq:[]},
+  {id:'ing2', nombre:'Inglés II', creditos:3, area:'transversal', semestre:4, prereq:['ing1']},
+];
+
+let aprobados = new Set();
+
+function render() {
+  const malla = document.getElementById('malla');
+  malla.innerHTML = '';
+
+  const ciclos = {
+    'Ciclo Inicial (1°–2° año)': [1,2,3,4],
+  };
+
+  for (const [nombreCiclo, sems] of Object.entries(ciclos)) {
+    const divCiclo = document.createElement('div');
+    divCiclo.className = 'ciclo';
+    divCiclo.innerHTML = `<h2>${nombreCiclo}</h2>`;
+
+    const cont = document.createElement('div');
+    cont.className = 'semestres';
+
+    sems.forEach(s => {
+      const box = document.createElement('div');
+      box.className = 'semestre';
+      box.innerHTML = `<h3>Semestre ${s}</h3>`;
+
+      ramos.filter(r => r.semestre === s).forEach(r => {
+        const div = document.createElement('div');
+        div.className = `ramo ${r.area}`;
+
+        const bloqueado = r.prereq.some(p => !aprobados.has(p));
+        if (bloqueado) div.classList.add('bloqueado');
+        if (aprobados.has(r.id)) div.classList.add('aprobado');
+
+        div.innerHTML = `<strong>${r.nombre}</strong><br>${r.creditos} créditos`;
+
+        div.onclick = () => {
+          if (bloqueado) return;
+          if (aprobados.has(r.id)) aprobados.delete(r.id);
+          else aprobados.add(r.id);
+          render();
+        };
+
+        box.appendChild(div);
+      });
+      cont.appendChild(box);
+    });
+
+    divCiclo.appendChild(cont);
+    malla.appendChild(divCiclo);
+  }
+
+  actualizarStats();
+}
+
+function actualizarStats() {
+  const totalCreditos = ramos.reduce((a,b)=>a+b.creditos,0);
+  const aprobadosCred = ramos.filter(r=>aprobados.has(r.id)).reduce((a,b)=>a+b.creditos,0);
+  const porcentaje = ((aprobadosCred/totalCreditos)*100).toFixed(1);
+
+  document.getElementById('stats').innerHTML = `
+    <strong>Progreso Académico</strong><br><br>
+    Créditos aprobados: ${aprobadosCred}<br>
+    Créditos restantes: ${totalCreditos - aprobadosCred}<br>
+    Porcentaje de avance: ${porcentaje}%
+  `;
+}
+
+render();
+</script>
+
+</body>
+</html>
